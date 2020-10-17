@@ -47,7 +47,7 @@ def train(model, device, train_loader, epoch):
         r_loss = 0.0
         for i, data in enumerate(train_loader, start=0):
             inputs, lables = data[0].to(device), data[1].to(device)
-            # print(i,inputs.size())
+            # print(inputs.size())
             net.zero_grad()
             outputs = model(inputs).to(device)
             loss = criterion(outputs, lables).to(device)
@@ -96,4 +96,4 @@ print('train finish,cost time:', str(cost_t))
 scores = pd.read_csv(r'../data/MNIST/score.txt', header=None, sep=' ')
 if np.array(scores)[0, 1] < float(test_accuracy * 100):
     scores[0], scores[1], scores[2] = round(train_accuracy, 4), test_accuracy, round(cost_t, 4)
-    scores.to_csv('./data/score.txt', sep=' ', header=None, index=False)
+    scores.to_csv('../data/MNIST/score.txt', sep=' ', header=None, index=False)
