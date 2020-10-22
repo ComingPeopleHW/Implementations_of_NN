@@ -1,2 +1,2 @@
 # Implementations_of_NN
-implementations of classical neural networks like LeNet,AlexNet
+implementations of classical neural networks like LeNet,AlexNet,GoogLeNet
