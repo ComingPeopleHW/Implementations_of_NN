@@ -60,8 +60,8 @@ class AlexNet(nn.Module):
 
 def train(model, device, train_loader, epoch):
     criterion = nn.CrossEntropyLoss().to(device)
-    # optimizer = optim.Adam(net.parameters(), lr=0.01)
-    optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
+    # optimizer = optim.SGD(model.parameters(), lr=1e-3, momentum=0.9)
     for epoch in range(epoch):
         r_loss = 0.0
         for i, data in enumerate(train_loader, start=0):
@@ -107,11 +107,11 @@ trainloader, testloader = dload.Fashion_MNIST_dataset()  # load MINIST dataset
 device = torch.device("cuda:0" if torch.cuda.is_available() else 'CPU')
 start_t = time.time()
 net = AlexNet().to(device)
-train_accuracy = train(net, device, trainloader, epoch=20)
+train_accuracy = train(net, device, trainloader, epoch=5)
 test_accuracy = test(net, device, testloader)
 end_t = time.time()
 cost_t = end_t - start_t
-print('train finish,cost time:', str(cost_t))
+print('train finish,cost time:', str(cost_t // 60), 'm')
 scores = pd.read_csv(r'../data/FashionMNIST/score.txt', header=None, sep=' ')
 if np.array(scores)[0, 1] < float(test_accuracy):
     scores[0], scores[1], scores[2] = round(train_accuracy, 4), test_accuracy, round(cost_t, 4)

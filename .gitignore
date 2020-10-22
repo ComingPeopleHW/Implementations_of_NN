@@ -1,1 +1,6 @@
 /test.py
+/data/
+/PyTorch_CNN_Architectures/
+/VGG/models/
+/VGG/train.py
+/VGG/validation.py
