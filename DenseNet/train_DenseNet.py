@@ -2,7 +2,9 @@ from comet_ml import Experiment
 import torch
 import torch.nn as nn
 import time
-from ResNet32_CIFAR10 import BasicBlock, ResNet_32
+# from ResNet.ResNet32_CIFAR10 import BasicBlock, ResNet_32
+from DenseNet.densenet import denseNet_BC100, denseNet_BC190, denseNet_BC250
+from DenseNet import densenet
 import torchvision.transforms as transforms
 import torchvision
 from torch.utils.data import DataLoader
@@ -17,7 +19,8 @@ def get_training_dataloader(batch_size=128, num_workers=16, shuffle=True):
         transforms.ToTensor(),
         normalize
     ])
-    cifar10_training = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+    cifar10_training = torchvision.datasets.CIFAR10(root='../data', train=True, download=True,
+                                                    transform=transform_train)
     cifar10_training_loader = DataLoader(cifar10_training, shuffle=shuffle, num_workers=num_workers,
                                          batch_size=batch_size)
 
@@ -75,18 +78,20 @@ def eval_training(_net, _epoch, test_loader, _step):
 
 
 if __name__ == '__main__':
-    experiment = Experiment(api_key='fxT3Krof2iAW4QWentgNxptou', project_name='ResNet_32_CIFAR10')
+    experiment = Experiment(api_key='fxT3Krof2iAW4QWentgNxptou', project_name='DenseNet_CIFAR10')
     device = torch.device("cuda:0" if torch.cuda.is_available() else 'CPU')
-    net = ResNet_32(BasicBlock, [7, 7, 7], num_classes=10).cuda()
+    # net = ResNet_32(BasicBlock, [7, 7, 7], num_classes=10).cuda()
+    # net = denseNet_BC100().cuda()
+    net = densenet.denseNet_BC40().cuda()
     criterion = nn.CrossEntropyLoss().cuda()
     optimizer = torch.optim.SGD(net.parameters(), lr=0.1, momentum=0.9, weight_decay=1e-4)
-    epoch = 185
+    epoch = 300
     batch_size = 128
-    num_workers = 16
+    num_workers = 0
 
     train_loader = get_training_dataloader(batch_size, num_workers)
     test_loader = get_test_dataloader(batch_size, num_workers)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [95, 140], gamma=0.1)
+    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, [150, 225], gamma=0.1)
     start_time = time.time()
     step = 0
     best_acc = 0.0

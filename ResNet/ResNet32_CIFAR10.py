@@ -64,3 +64,5 @@ class BasicBlock(nn.Module):
         out += self.shortcut(x)
         out = F.relu(out, inplace=True)
         return out
+
+

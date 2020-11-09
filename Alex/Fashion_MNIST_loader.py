@@ -3,7 +3,7 @@ import torch
 import torchvision
 import torch.nn as nn
 import torchvision.transforms as transforms
-import pandas as pd
+
 
 
 # download MNIST dataset,if there has MNIST dataset yet,it will not download again.
@@ -18,5 +18,4 @@ def Fashion_MNIST_dataset():
     return trainloader, testloader
 
 
-train, test = Fashion_MNIST_dataset()
 
