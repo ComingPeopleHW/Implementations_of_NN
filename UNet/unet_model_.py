@@ -67,10 +67,10 @@ class Up(nn.Module):
 
 
 class Unet_model(nn.Module):
-    def __init__(self, int_c, out_c):
+    def __init__(self, in_c, out_c):
         super(Unet_model, self).__init__()
         self.max_pool2d = nn.MaxPool2d(2)
-        self.ini_conv = double_conv(int_c, 32)
+        self.ini_conv = double_conv(in_c, 32)
         self.down1 = Down(32, 64)
         self.down2 = Down(64, 128)
         self.down3 = Down(128, 256)
@@ -82,13 +82,13 @@ class Unet_model(nn.Module):
         self.up4 = Up(64, 32)
         self.out = OutConv(32, out_c)
 
-    def forward(self, x, gray):
+    def forward(self, input_, gray):
         # gray_x for attention map
         gray_2 = self.max_pool2d(gray)
         gray_3 = self.max_pool2d(gray_2)
         gray_4 = self.max_pool2d(gray_3)
         gray_5 = self.max_pool2d(gray_4)
-        x1 = self.ini_conv(x)  # gray
+        x1 = self.ini_conv(input_)  # gray
         x2 = self.down1(x1)  # gray1
         x3 = self.down2(x2)  # gray2
         x4 = self.down3(x3)  # gray3
@@ -106,5 +106,20 @@ class Unet_model(nn.Module):
         x1 = x1 * gray
         x = self.up4(x, x1)
 
-        x = self.out(x)
+        latent = self.out(x)
+        latent = latent * gray
+        output = latent + input
         return x
+
+    def set_requires_grad(self, nets, requires_grad=False):
+        """Set requies_grad=Fasle for all the networks to avoid unnecessary computations
+        Parameters:
+            nets (network list)   -- a list of networks
+            requires_grad (bool)  -- whether the networks require gradients or not
+        """
+        if not isinstance(nets, list):
+            nets = [nets]
+        for net in nets:
+            if net is not None:
+                for param in net.parameters():
+                    param.requires_grad = requires_grad

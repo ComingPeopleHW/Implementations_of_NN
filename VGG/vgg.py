@@ -4,7 +4,7 @@ import math
 
 class VGG(nn.Module):
 
-    def __init__(self, features, num_classes=100): #, init_weights=True
+    def __init__(self, features, num_classes=100):  # , init_weights=True
         super(VGG, self).__init__()
         self.features = features
         self.classifier = nn.Sequential(
@@ -43,8 +43,14 @@ def make_layers(cfg, batch_norm=False):
 
 
 cfg = {
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
     'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M']
 }
+
+
+def vgg16_bn():
+    model = VGG(make_layers(cfg['D'], batch_norm=True))
+    return model
 
 
 def vgg19():
