@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import os
+from vgg import vgg16_bn
 
 
 # basic conv in UNet
@@ -123,3 +125,18 @@ class Unet_model(nn.Module):
             if net is not None:
                 for param in net.parameters():
                     param.requires_grad = requires_grad
+
+    def save_network(self, net_G, epoch):
+        save_filename = '%d_.pth' % epoch
+        save_dir = '/checkpoints'
+        save_path = os.path.join(save_dir, save_filename)
+        torch.save(net_G, save_path)
+
+
+def load_vgg(model_dir):
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
+    vgg = vgg16_bn().cuda()
+    for param in vgg.parameters():
+        param.requires_grad = False
+    return vgg

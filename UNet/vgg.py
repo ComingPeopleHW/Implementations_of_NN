@@ -62,5 +62,6 @@ def vgg19_bn():
     model = VGG(make_layers(cfg['E'], batch_norm=True))
     return model
 
+
 net = vgg16_bn()
 print(net)

@@ -2,17 +2,20 @@ import torch
 import torch.nn as nn
 import torch.utils.data.dataloader as dataloader
 from torchvision.transforms import transforms
-from unet_model_ import *
+from networks import *
 from PatchGAN import *
+import random
+from PIL import Image
 
 from datasets import ImageDataset
 
-# transform = [
-#     # transforms.Resize((args.image_height, args.image_width), interpolation=Image.BICUBIC),
-#     # transforms.RandomCrop(),
-#     transforms.ToTensor(),
-#     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
-# ]
+zoom = 1 + 0.1 * random.randint(0, 4)
+transform = [
+    transforms.Resize((int(zoom * 400), int(zoom * 600)), interpolation=Image.BICUBIC),
+    transforms.RandomCrop(256),
+    transforms.ToTensor(),
+    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+]
 # dataset = ImageDataset(root=, transforms_=transform)
 # data = torch.utils.data.DataLoader(
 #     dataset,
@@ -21,9 +24,12 @@ from datasets import ImageDataset
 #     num_workers=,
 #
 # )
+# define networks
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Generator = Unet_model(in_c=3, out_c=3).to(device)
 discriminator_Global = discriminator(in_c=3).to(device)
+vgg = load_vgg('./models')
+vgg.eval()
 # define loss type
 criterionGAN = nn.MSELoss().cuda()
 
@@ -32,6 +38,7 @@ optimizer_G = torch.optim.Adam(Generator.parameters(), lr=0.001)
 optimizer_D = torch.optim.Adam(discriminator_Global.parameters(), lr=0.001)
 
 epochs = 200
+epoch_save = 20
 
 for epoch in range(epochs):
     for index, data in enumerate():
@@ -64,6 +71,9 @@ for epoch in range(epochs):
         loss_G = loss_G_Global + loss_G_local  # + VGG feature map loss
         loss_G.backward()
         optimizer_G.step()
+
+    if (epoch + 1) % epoch_save == 0:
+        Generator.save_network(Generator, epoch)
 
         # print loss
         # save checkpoint
