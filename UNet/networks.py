@@ -1,3 +1,5 @@
+import random
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -113,30 +115,76 @@ class Unet_model(nn.Module):
         output = latent + input
         return x
 
-    def set_requires_grad(self, nets, requires_grad=False):
-        """Set requies_grad=Fasle for all the networks to avoid unnecessary computations
-        Parameters:
-            nets (network list)   -- a list of networks
-            requires_grad (bool)  -- whether the networks require gradients or not
-        """
-        if not isinstance(nets, list):
-            nets = [nets]
-        for net in nets:
-            if net is not None:
-                for param in net.parameters():
-                    param.requires_grad = requires_grad
 
-    def save_network(self, net_G, epoch):
-        save_filename = '%d_.pth' % epoch
-        save_dir = '/checkpoints'
-        save_path = os.path.join(save_dir, save_filename)
-        torch.save(net_G, save_path)
+class GANLoss(nn.Module):
+    def __init__(self, use_lsgan=True, target_real_label=1.0, target_fake_label=0.0, tensor=torch.cuda.FloatTensor):
+        super(GANLoss, self).__init__()
+        self.real_label = target_real_label
+        self.fake_label = target_fake_label
+        self.real_label_var = None
+        self.fake_label_var = None
+        self.Tensor = tensor
+        if use_lsgan:
+            self.loss = nn.MSELoss()
+        else:
+            self.loss = nn.BCELoss()
+
+    def get_target_tensor(self, input, target_is_real):
+        target_tensor = None
+        if target_is_real:
+            create_label = ((self.real_label_var is None) or
+                            (self.real_label_var.numel() != input.numel()))
+            if create_label:
+                real_tensor = self.Tensor(input.size()).fill_(self.real_label)
+                self.real_label_var = torch.tensor(real_tensor, requires_grad=True)
+                # self.real_label_var = Variable(real_tensor, requires_grad=False)
+            target_tensor = self.real_label_var
+        else:
+            create_label = ((self.fake_label_var is None) or
+                            (self.fake_label_var.numel() != input.numel()))
+            if create_label:
+                fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
+                self.real_label_var = torch.tensor(fake_tensor, requires_grad=True)
+                # self.fake_label_var = Variable(fake_tensor, requires_grad=False)
+            target_tensor = self.fake_label_var
+        return target_tensor
+
+    def __call__(self, input_, target_is_real):
+        target_tensor = self.get_target_tensor(input_, target_is_real)
+        return self.loss(input_, target_tensor)
 
 
-def load_vgg(model_dir):
-    if not os.path.exists(model_dir):
-        os.mkdir(model_dir)
-    vgg = vgg16_bn().cuda()
-    for param in vgg.parameters():
-        param.requires_grad = False
-    return vgg
+def set_requires_grad(nets, requires_grad=False):
+    """Set requies_grad=Fasle for all the networks to avoid unnecessary computations
+    Parameters:
+        nets (network list)   -- a list of networks
+        requires_grad (bool)  -- whether the networks require gradients or not
+    """
+    if not isinstance(nets, list):
+        nets = [nets]
+    for net in nets:
+        if net is not None:
+            for param in net.parameters():
+                param.requires_grad = requires_grad
+
+
+def save_network(net_G, epoch):
+    save_filename = '%d_.pth' % epoch
+    save_dir = '/checkpoints'
+    save_path = os.path.join(save_dir, save_filename)
+    torch.save(net_G, save_path)
+
+
+def get_Patch(num_patch, patch_size, realB_data, fakeB_data, input_data):
+    w = realB_data.size(3)
+    h = realB_data.size(2)
+    real_patch = []
+    fake_patch = []
+    input_patch = []
+    for i in range(num_patch):
+        w_offset = random.randint(0, max(0, w - patch_size - 1))
+        h_offset = random.randint(0, max(0, h - patch_size - 1))
+        real_patch.append(realB_data[:, :, h_offset:h_offset + patch_size, w_offset:w_offset + patch_size])
+        fake_patch.append(fakeB_data[:, :, h_offset:h_offset + patch_size, w_offset:w_offset + patch_size])
+        input_patch.append(input_data[:, :, h_offset:h_offset + patch_size, w_offset:w_offset + patch_size])
+    return real_patch, fake_patch, input_patch

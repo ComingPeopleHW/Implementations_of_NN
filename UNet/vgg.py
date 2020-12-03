@@ -1,67 +1,81 @@
+import torch
 from torch import nn
 import math
+import os
+import torch.nn.functional as F
 
 
-class VGG(nn.Module):
+# vgg16 for enlightenGAN
+class VGG16(nn.Module):
 
-    def __init__(self, features, num_classes=100):  # , init_weights=True
-        super(VGG, self).__init__()
-        self.features = features
-        self.classifier = nn.Sequential(
-            nn.Linear(512, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, 4096),
-            nn.ReLU(True),
-            nn.Dropout(),
-            nn.Linear(4096, num_classes)
+    def __init__(self):  # , init_weights=True
+        super(VGG16, self).__init__()
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, 64, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
-        # if init_weights:
-        #     self._initialize_weights()
+        self.conv2 = nn.Sequential(
+            nn.Conv2d(64, 128, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+        self.conv3 = nn.Sequential(
+            nn.Conv2d(128, 256, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+        self.conv4 = nn.Sequential(
+            nn.Conv2d(256, 512, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
+        )
+        self.conv5 = nn.Sequential(
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, 3, 1, 1),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
-        x = self.features(x)
-        x = x.view(x.size(0), -1)
-        x = self.classifier(x)
+        x = self.conv1(x)
+        x = self.conv2(x)
+        x = self.conv3(x)
+        x = self.conv4(x)
+        x = self.conv5(x)
         return x
 
 
-def make_layers(cfg, batch_norm=False):
-    layers = []
-    in_channels = 3
-    for v in cfg:
-        if v == 'M':
-            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
-        else:
-            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
-            if batch_norm:
-                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(True)]
-            else:
-                layers += [conv2d, nn.ReLU(True)]
-            in_channels = v
-    return nn.Sequential(*layers)
+def load_vgg(model_dir):
+    if not os.path.exists(model_dir):
+        os.mkdir(model_dir)
+    vgg = VGG16().cuda()
+    vgg.eval()
+    for param in vgg.parameters():
+        param.requires_grad = False
+    return vgg
 
 
-cfg = {
-    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
-    'E': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 256, 'M', 512, 512, 512, 512, 'M', 512, 512, 512, 512, 'M']
-}
+class PerceptualLoss(nn.Module):
+    def __init__(self):
+        super(PerceptualLoss, self).__init__()
+        self.instancenorm = nn.InstanceNorm2d(512)
 
-
-def vgg16_bn():
-    model = VGG(make_layers(cfg['D'], batch_norm=True))
-    return model
-
-
-def vgg19():
-    model = VGG(make_layers(cfg['E']))
-    return model
-
-
-def vgg19_bn():
-    model = VGG(make_layers(cfg['E'], batch_norm=True))
-    return model
-
-
-net = vgg16_bn()
-print(net)
+    def compute_vgg_loss(self, vgg, img1, img2):
+        img1_feature = vgg(img1)
+        img2_feature = vgg(img2)
+        return torch.mean(torch.pow(self.instancenorm(img1_feature) - self.instancenorm(img2_feature), 2))

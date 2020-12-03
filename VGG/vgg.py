@@ -64,3 +64,4 @@ def vgg19_bn():
 
 net = vgg16_bn()
 print(net)
+
