@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import os
-from vgg import vgg16_bn
+
 
 
 # basic conv in UNet

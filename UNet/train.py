@@ -106,7 +106,7 @@ for epoch in range(epochs):
         optimizer_G.step()
 
     if (epoch + 1) % epoch_save == 0:
-        Generator.save_network(Generator, epoch)
+        save_network(Generator, epoch)
 
         # print loss
         # save checkpoint
