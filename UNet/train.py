@@ -16,14 +16,13 @@ transform = [
     transforms.ToTensor(),
     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
 ]
-# dataset = ImageDataset(root=, transforms_=transform)
-# data = torch.utils.data.DataLoader(
-#     dataset,
-#     batch_size=,
-#     shuffle=,
-#     num_workers=,
-#
-# )
+dataset = ImageDataset(root='', transforms_=transform)
+data = torch.utils.data.DataLoader(
+    dataset,
+    batch_size=8,
+    shuffle=True,
+    num_workers=16
+)
 # define networks
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 # generator
@@ -39,18 +38,20 @@ vgg = load_vgg('./models')
 criterionGAN = GANLoss()
 vggloss = PerceptualLoss()
 
-# define optimizer
-optimizer_G = torch.optim.Adam(Generator.parameters(), lr=0.001)
-optimizer_D = torch.optim.Adam(d_Global.parameters(), lr=0.001)
-optimizer_D_local = torch.optim.Adam(d_local.parameters(), lr=0.001)
-
+# define parameters
 epochs = 200
 epoch_save = 20
 num_patch = 5.0
 patch_size = 32
+lr = 0.001
+
+# define optimizer
+optimizer_G = torch.optim.Adam(Generator.parameters(), lr=lr)
+optimizer_D = torch.optim.Adam(d_Global.parameters(), lr=lr)
+optimizer_D_local = torch.optim.Adam(d_local.parameters(), lr=lr)
 
 for epoch in range(epochs):
-    for index, data in enumerate():
+    for index, data in enumerate(data):
         input_A = data['A'].cuda()
         real_B = data['B'].cuda()
         input_gray = data['A_gray'].cuda()
@@ -104,6 +105,9 @@ for epoch in range(epochs):
         loss_G = loss_G_Global + loss_G_local + vgg_loss  # + VGG feature map loss
         loss_G.backward()
         optimizer_G.step()
+
+        # update learningRate
+        lr = update_learning_rate(lr, optimizer_G, optimizer_D, optimizer_D_local)
 
     if (epoch + 1) % epoch_save == 0:
         save_network(Generator, epoch)

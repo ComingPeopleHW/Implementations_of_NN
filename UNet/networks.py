@@ -6,7 +6,6 @@ import torch.nn.functional as F
 import os
 
 
-
 # basic conv in UNet
 class double_conv(nn.Module):
     def __init__(self, in_c, out_c, mid_c=None):
@@ -188,3 +187,19 @@ def get_Patch(num_patch, patch_size, realB_data, fakeB_data, input_data):
         fake_patch.append(fakeB_data[:, :, h_offset:h_offset + patch_size, w_offset:w_offset + patch_size])
         input_patch.append(input_data[:, :, h_offset:h_offset + patch_size, w_offset:w_offset + patch_size])
     return real_patch, fake_patch, input_patch
+
+
+def update_learning_rate(lr, G, D, D_local):
+    old_lr = lr
+    lrd = lr / 100  # opt.lr default=0.0001
+    lr = lr - lrd
+    for param_group in D.param_groups:
+        param_group['lr'] = lr
+
+    for param_group in D_local.param_groups:
+        param_group['lr'] = lr
+    for param_group in G.param_groups:
+        param_group['lr'] = lr
+
+    print('update learning rate: %f -> %f' % (old_lr, lr))
+    return lr
