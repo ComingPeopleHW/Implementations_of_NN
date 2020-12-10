@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@192.168.58.57:22 password" createEmptyFolders="true" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="ubuntu@192.168.58.245:22" createEmptyFolders="true" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
-      <paths name="ubuntu@192.168.58.57:22 password">
+      <paths name="ubuntu@192.168.58.245:22">
         <serverdata>
           <mappings>
-            <mapping deploy="/home/ubuntu/HWK" local="$PROJECT_DIR$" />
+            <mapping deploy="/home/ubuntu/Hwk/Implementations_of_NN" local="$PROJECT_DIR$/UNet" />
           </mappings>
         </serverdata>
       </paths>

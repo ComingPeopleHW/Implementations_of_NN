@@ -11,27 +11,27 @@ class discriminator(nn.Module):
         super(discriminator, self).__init__()
         self.model = nn.Sequential(
             nn.Conv2d(in_c, 64, kernel_size=4, stride=2, padding=1),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
 
             nn.Conv2d(64, 128, 4, 2, 1),
             nn.InstanceNorm2d(128, affine=True),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
 
             nn.Conv2d(128, 256, 4, 2, 1),
             nn.InstanceNorm2d(256, affine=True),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
 
             nn.Conv2d(256, 512, 4, 1, 1),
             nn.InstanceNorm2d(512),
-            nn.LeakyReLU(0.2, True),
+            nn.LeakyReLU(0.2, inplace=False),
 
             nn.Conv2d(512, 1, 4, 1, 1)  # output 1 channel prediction map
         )
 
     def forward(self, x):
-        x = self.model(x)
+        out = self.model(x)
         # x = F.adaptive_avg_pool2d(x, 1).view(x.size()[0], -1)  # output size (batch_size,1)
-        return x
+        return out
 
 
 def weights_init(m):
@@ -41,7 +41,3 @@ def weights_init(m):
     elif classname.find('BatchNorm2d') != -1:
         m.weight.data.normal_(1.0, 0.02)
         m.bias.data.fill_(0)
-
-
-net = discriminator(3)
-print(net)

@@ -10,6 +10,7 @@ import os
 class double_conv(nn.Module):
     def __init__(self, in_c, out_c, mid_c=None):
         super(double_conv, self).__init__()
+        mid_c = out_c
         self.double_convolution = nn.Sequential(
             nn.Conv2d(in_c, mid_c, 3, 1, 1),
             nn.BatchNorm2d(out_c),
@@ -47,7 +48,9 @@ class Down(nn.Module):
 
     def forward(self, x, gray=None):
         x = self.maxpool(x)
-        if not gray:
+        if gray is not None:
+            # print(gray.shape)
+            # print(x.shape)
             x = x * gray
         x = self.conv(x)
         return x
@@ -103,7 +106,7 @@ class Unet_model(nn.Module):
         x3 = x3 * gray_3
         x = self.up2(x, x3)
 
-        x2 = x4 * gray_2
+        x2 = x2 * gray_2
         x = self.up3(x, x2)
 
         x1 = x1 * gray
@@ -111,8 +114,8 @@ class Unet_model(nn.Module):
 
         latent = self.out(x)
         latent = latent * gray
-        output = latent + input
-        return x
+        output = latent + input_
+        return output
 
 
 class GANLoss(nn.Module):
@@ -128,22 +131,26 @@ class GANLoss(nn.Module):
         else:
             self.loss = nn.BCELoss()
 
-    def get_target_tensor(self, input, target_is_real):
+    def get_target_tensor(self, input_, target_is_real):
         target_tensor = None
         if target_is_real:
             create_label = ((self.real_label_var is None) or
-                            (self.real_label_var.numel() != input.numel()))
+                            (self.real_label_var.numel() != input_.numel()))
             if create_label:
-                real_tensor = self.Tensor(input.size()).fill_(self.real_label)
-                self.real_label_var = torch.tensor(real_tensor, requires_grad=True)
+                real_tensor = self.Tensor(input_.size()).fill_(self.real_label)
+                # self.real_label_var = torch.tensor(real_tensor, requires_grad=True)
+                self.real_label_var = real_tensor.clone().detach().requires_grad_(True)
                 # self.real_label_var = Variable(real_tensor, requires_grad=False)
             target_tensor = self.real_label_var
         else:
             create_label = ((self.fake_label_var is None) or
-                            (self.fake_label_var.numel() != input.numel()))
+                            (self.fake_label_var.numel() != input_.numel()))
             if create_label:
-                fake_tensor = self.Tensor(input.size()).fill_(self.fake_label)
-                self.real_label_var = torch.tensor(fake_tensor, requires_grad=True)
+                # print('false,create')
+                fake_tensor = self.Tensor(input_.size()).fill_(self.fake_label)
+                # self.fake_label_var = torch.tensor(fake_tensor, requires_grad=True)
+                self.fake_label_var = fake_tensor.clone().detach().requires_grad_(True)
+
                 # self.fake_label_var = Variable(fake_tensor, requires_grad=False)
             target_tensor = self.fake_label_var
         return target_tensor
@@ -169,7 +176,7 @@ def set_requires_grad(nets, requires_grad=False):
 
 def save_network(net_G, epoch):
     save_filename = '%d_.pth' % epoch
-    save_dir = '/checkpoints'
+    save_dir = 'checkpoints'
     save_path = os.path.join(save_dir, save_filename)
     torch.save(net_G, save_path)
 
